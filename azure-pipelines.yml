@@ -1,0 +1,78 @@
+trigger:
+- main
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+variables:
+  buildConfiguration: 'Release'
+
+stages:
+- stage: CI
+  displayName: 'Continuous Integration'
+  jobs:
+  - job: BuildJob
+    displayName: 'Build Job'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Instalar .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.x'
+        
+    - script: dotnet restore
+      displayName: 'Restaurar dependencias'
+      
+    - script: dotnet build --configuration $(buildConfiguration)
+      displayName: 'Compilar aplicacion'
+
+- stage: Testing
+  displayName: 'Stage Testing'
+  dependsOn: CI
+  condition: succeeded()
+  jobs:
+  - job: TestJob
+    displayName: 'Test Job'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Instalar .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.x'
+        
+    - script: dotnet test --configuration $(buildConfiguration) --logger trx
+      displayName: 'Ejecutar pruebas unitarias'
+      
+    - task: PublishTestResults@2
+      displayName: 'Mostrar resultados'
+      inputs:
+        testResultsFormat: 'VSTest'
+        testResultsFiles: '**/*.trx'
+        failOnStandardError: true
+
+- stage: Delivery
+  displayName: 'Stage Delivery'
+  dependsOn: Testing
+  condition: succeeded()
+  jobs:
+  - job: DeliveryJob
+    displayName: 'Delivery Job'
+    steps:
+    - task: UseDotNet@2
+      displayName: 'Instalar .NET SDK'
+      inputs:
+        packageType: 'sdk'
+        version: '10.x'
+        
+    - script: dotnet publish --configuration $(buildConfiguration) --output $(Build.ArtifactStagingDirectory)
+      displayName: 'Publicar aplicacion'
+      
+    - task: PublishBuildArtifacts@1
+      displayName: 'Generar artefactos'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)'
+        ArtifactName: 'AppCalculadoraArtifact'
+        publishLocation: 'Container'
+        
+    - script: echo "Entrega confirmada con exito."
+      displayName: 'Confirmar entrega'
