@@ -2,39 +2,42 @@ name: Pipeline DevOps Multistage
 
 on:
   push:
-    branches: [ "main" ]
+    [cite_start]branches: [ "main" ] # Trigger automático al hacer push a main [cite: 103, 105]
 
 jobs:
+  # PARTE 5: Configurar Stage CI [cite: 62]
   Build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Setup .NET
+      - name: Instalar .NET SDK
         uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: '8.0'
-      - name: Restore and Build
+          [cite_start]dotnet-version: '8.0' # Cumple con la Parte 5, Step 1 [cite: 68]
+      - name: Restaurar y Compilar
         run: |
-          dotnet restore
-          dotnet build --configuration Release
+          dotnet restore AppCalculadora/AppCalculadora.csproj # Parte 5, Step 2 [cite: 69]
+          dotnet build AppCalculadora/AppCalculadora.csproj --configuration Release # Parte 5, Step 3 [cite: 70]
 
+  # PARTE 6: Configurar Stage Testing [cite: 73]
   Testing:
     runs-on: ubuntu-latest
-    needs: Build
+    [cite_start]needs: Build # Garantiza la secuencia CI -> Testing [cite: 58, 59]
     steps:
       - uses: actions/checkout@v4
-      - name: Run Tests
-        run: dotnet test --configuration Release
+      - name: Ejecutar pruebas unitarias
+        [cite_start]run: dotnet test AppCalculadora.Tests/AppCalculadora.Tests.csproj --configuration Release # Parte 6, Step 1 [cite: 78]
 
+  # PARTE 7: Configurar Stage Delivery [cite: 83]
   Delivery:
     runs-on: ubuntu-latest
-    needs: Testing
+    [cite_start]needs: Testing # Garantiza la secuencia Testing -> Delivery [cite: 60, 61]
     steps:
       - uses: actions/checkout@v4
-      - name: Publish
-        run: dotnet publish -c Release -o ./publish
-      - name: Upload Artifact
-        uses: actions/upload-artifact@v4
+      - name: Publicar aplicación
+        [cite_start]run: dotnet publish AppCalculadora/AppCalculadora.csproj -c Release -o ./publish # Parte 7, Step 1 [cite: 88]
+      - name: Generar artefactos
+        [cite_start]uses: actions/upload-artifact@v4 # Parte 7, Step 2 [cite: 89]
         with:
-          name: app-calculadora
+          name: AppCalculadora-Entrega
           path: ./publish
