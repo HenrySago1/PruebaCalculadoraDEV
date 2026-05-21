@@ -1,0 +1,43 @@
+name: Pipeline DevOps Multistage
+
+on:
+  push:
+    [cite_start]branches: [ "main" ] # Trigger automático [cite: 103, 105]
+
+jobs:
+  # STAGE CI: Compilación [cite: 62, 66]
+  Build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configurar .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          [cite_start]dotnet-version: '8.0' # [cite: 12, 68]
+      - name: Restaurar y Compilar
+        run: |
+          dotnet restore # [cite: 69]
+          dotnet build --no-restore --configuration Release # [cite: 70]
+
+  # STAGE TESTING: Validación de calidad [cite: 73, 77]
+  Testing:
+    runs-on: ubuntu-latest
+    [cite_start]needs: Build # Garantiza que el flujo sea secuencial [cite: 18, 117]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Ejecutar Pruebas Unitarias
+        [cite_start]run: dotnet test --configuration Release # [cite: 78, 80]
+
+  # STAGE DELIVERY: Generación de artefactos [cite: 83, 87]
+  Delivery:
+    runs-on: ubuntu-latest
+    [cite_start]needs: Testing # Solo se ejecuta si las pruebas pasan [cite: 115, 116]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Publicar Aplicación
+        [cite_start]run: dotnet publish -c Release -o ./publish # [cite: 88]
+      - name: Subir Artefacto
+        [cite_start]uses: actions/upload-artifact@v4 # [cite: 89]
+        with:
+          name: app-calculadora-binarios
+          path: ./publish
